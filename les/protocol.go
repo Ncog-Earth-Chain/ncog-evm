@@ -306,6 +306,8 @@ func (a *announceData) checkSignature(id enode.ID, update keyValueMap) error {
 		return errors.New("wrong signature")
 	}
 
+	fmt.Println("ValidateMLDsa87Signature", "3")
+
 	return nil
 }
 

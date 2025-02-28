@@ -143,6 +143,22 @@ func HexToMLDsa87(hexkey string) (*mldsa87.PrivateKey, error) {
 	return ToMLDsa87(b)
 }
 
+func HexToMLDSA87PublicKey(hexKey string) (*mldsa87.PublicKey, error) {
+	// Step 1: Decode the hex string into bytes
+	pubKeyBytes, err := hex.DecodeString(hexKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode hex string: %v", err)
+	}
+
+	// Step 2: Unmarshal the bytes into an mldsa87.PublicKey
+	var pubKey mldsa87.PublicKey
+	if err := pubKey.UnmarshalBinary(pubKeyBytes); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal public key: %v", err)
+	}
+
+	return &pubKey, nil
+}
+
 func MLDsa87ToHex(key *mldsa87.PrivateKey) (string, error) {
 	// Marshal the MLDsa87 private key to its binary representation
 	keyBytes, err := key.MarshalBinary()
@@ -227,6 +243,7 @@ func GenerateMLDsa87Key() (*mldsa87.PrivateKey, error) {
 // SignMLDsa87 signs the given message hash using the MLDsa87 private key.
 func SignMLDsa87(priv *mldsa87.PrivateKey, msg []byte) ([]byte, error) {
 	// Sign with nil SignerOpts since MLDsa87 does not support pre-hashed messages.
+	fmt.Println("SignMLDsa87 cryptod", "test")
 	return priv.Sign(rand.Reader, msg, crypto.Hash(0))
 }
 
@@ -237,6 +254,7 @@ func SignMLDsa87(priv *mldsa87.PrivateKey, msg []byte) ([]byte, error) {
 // ValidateMLDsa87Signature verifies the signature using the public key, hash, and signature.
 func ValidateMLDsa87Signature(pub *mldsa87.PublicKey, msg []byte, sig []byte) bool {
 	// Pass `nil` as the context string since we are not using any.
+	fmt.Println("ValidateMLDsa87Signature cryptod", "test")
 	return mldsa87.Verify(pub, msg, nil, sig)
 }
 
@@ -244,6 +262,16 @@ func PubkeyToAddress(pub mldsa87.PublicKey) common.Address {
 	pubBytes, _ := pub.MarshalBinary()
 	return common.BytesToAddress(Keccak512(pubBytes)[12:])
 }
+
+// PubkeyToAddress converts an mldsa87.PublicKey to an Ethereum address
+/* func PubkeyToAddress(pub *mldsa87.PublicKey) (common.Address, error) {
+	pubBytes, err := pub.MarshalBinary()
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to marshal public key: %v", err)
+	}
+	hash := Keccak512(pubBytes)
+	return common.BytesToAddress(hash[12:]), nil
+} */
 
 /* func zeroBytes(bytes []byte) {
 	for i := range bytes {

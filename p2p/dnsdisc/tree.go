@@ -103,6 +103,8 @@ func (t *Tree) SetSignature(pubkey *cryptod.PublicKey, signature string) error {
 		return fmt.Errorf("signature verification failed")
 	}
 
+	fmt.Println("ValidateMLDsa87Signature", "6")
+
 	t.root = &root
 	return nil
 }

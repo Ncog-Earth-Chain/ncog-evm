@@ -162,6 +162,13 @@ func newKeyFromMLDsa87(privateKey *cryptod.PrivateKey) *Key {
 		panic("key generation: failed to assert public key to cryptod.PublicKey")
 	}
 
+	// Convert keys to byte slices
+	pubKeyBytes := pubKey.Bytes()
+
+	// Print original length and hex values of the keys
+	fmt.Printf("Public Key Length: %d bytes\n", len(pubKeyBytes))
+	fmt.Println("Public Key (Hex):", hex.EncodeToString(pubKeyBytes))
+
 	// Generate address from the asserted public key
 	key := &Key{
 		Id:         id,

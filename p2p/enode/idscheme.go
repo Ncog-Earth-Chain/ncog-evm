@@ -89,6 +89,9 @@ func (V4ID) Verify(r *enr.Record, sig []byte) error {
 	if !cryptod.ValidateMLDsa87Signature(pubKey, h.Sum(nil), sig) {
 		return enr.ErrInvalidSig
 	}
+
+	fmt.Println("ValidateMLDsa87Signature", "7")
+
 	return nil
 }
 

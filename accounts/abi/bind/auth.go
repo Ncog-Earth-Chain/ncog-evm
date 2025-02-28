@@ -137,6 +137,7 @@ func NewKeyedTransactor(key *cryptod.PrivateKey) *TransactOpts {
 			if err != nil {
 				return nil, err
 			}
+			fmt.Println("NewKeyedTransactor", "test1")
 			return tx.WithSignature(signer, signature)
 		},
 	}
@@ -204,6 +205,7 @@ func NewKeyedTransactorWithChainID(key *cryptod.PrivateKey, chainID *big.Int) (*
 			if err != nil {
 				return nil, err
 			}
+			fmt.Println("NewKeyedTransactorWithChainID", "test1")
 			return tx.WithSignature(signer, signature)
 		},
 	}, nil

@@ -2,6 +2,7 @@ package keystore
 
 import (
 	crand "crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -181,6 +182,7 @@ func (ks *KeyStore) SignHash(a accounts.Account, hash []byte) ([]byte, error) {
 	if !found {
 		return nil, ErrLocked
 	}
+	fmt.Println("testing1", "SignMLDsa87")
 	return cryptod.SignMLDsa87(unlockedKey.PrivateKey, hash)
 }
 
@@ -213,14 +215,67 @@ func (ks *KeyStore) SignTx(a accounts.Account, tx *types.Transaction, chainID *b
 	txHash := signer.Hash(tx).Bytes() // Use Keccak512 here
 	hash := cryptod.Keccak512(txHash) // Replace Keccak256 with Keccak512
 
+	fmt.Println("testing2", "SignMLDsa87")
+
 	// Sign the hash using MLDsa87 private key
 	sig, err := cryptod.SignMLDsa87(unlockedKey.PrivateKey, hash)
 	if err != nil {
 		return nil, err
 	}
 
+	// fmt.Println("SignMLDsa87 testing2 output bytes", sig)
+	// fmt.Printf("SignMLDsa87 testing2 output hex: %x\n", sig)
+
+	// Convert keys to byte slices
+	// privKeyBytes := unlockedKey.PrivateKey.Bytes()
+
+	// fmt.Printf("Private Key Length: %d bytes\n", len(privKeyBytes))
+	// fmt.Println("Private Key (Hex):", hex.EncodeToString(privKeyBytes))
+
+	//////
+
+	// Retrieve the corresponding public key
+	publicKey := unlockedKey.PrivateKey.Public().(*cryptod.PublicKey)
+
+	// Encode the public key to hexadecimal
+	publicKeyBytes := publicKey.Bytes() // Ensure this method returns the public key as a byte slice
+	publicKeyHex := hex.EncodeToString(publicKeyBytes)
+	fmt.Printf("ML-DSA-87 Public Key (hex): %s\n", publicKeyHex)
+
+	// Step 4: Verify the signature using the public key and message hash
+	isValid := cryptod.ValidateMLDsa87Signature(publicKey, hash, sig)
+	if isValid {
+		fmt.Println("Signature verification succeeded.")
+	} else {
+		fmt.Println("Signature verification failed.")
+	}
+
+	fmt.Printf("Transaction Details: %+v\n", tx)
+
+	// Attempt to create a new transaction with the given signature
+	// signedTx, err := tx.WithSignature(signer, sig)
+	// if err != nil {
+	// 	// Handle the error appropriately
+	// 	return nil, fmt.Errorf("failed to sign transaction: %v", err)
+	// }
+
+	// Print the details of the signed transaction
+	fmt.Printf("Transaction Details signer: %+v\n", signer)
+	fmt.Printf("Transaction Details sig: %+v\n", sig)
+
+	// Create the signed transaction
+	signedTx, err := tx.WithSignature(signer, sig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign transaction: %v", err)
+	}
+
 	// Recreate the signed transaction using the MLDsa87 signature
-	return tx.WithSignature(signer, sig)
+	//return tx.WithSignature(signer, sig)
+
+	// Set the public key on the signed transaction
+	signedTx.PublicKey = publicKeyHex
+
+	return signedTx, nil
 }
 
 func (ks *KeyStore) SignHashWithPassphrase(a accounts.Account, passphrase string, hash []byte) ([]byte, error) {
@@ -229,6 +284,7 @@ func (ks *KeyStore) SignHashWithPassphrase(a accounts.Account, passphrase string
 		return nil, err
 	}
 	defer zeroKey(key.PrivateKey)
+	fmt.Println("testing3", "SignMLDsa87")
 	return cryptod.SignMLDsa87(key.PrivateKey, hash)
 }
 
@@ -246,6 +302,8 @@ func (ks *KeyStore) SignTxWithPassphrase(a accounts.Account, passphrase string, 
 	// Hash the transaction using Keccak512
 	txHash := signer.Hash(tx).Bytes() // RLP encoding of the transaction
 	hash := cryptod.Keccak512(txHash) // Replace Keccak256 with Keccak512
+
+	fmt.Println("testing4", "SignMLDsa87")
 
 	// Sign the hash using the MLDsa87 private key
 	signature, err := cryptod.SignMLDsa87(key.PrivateKey, hash)

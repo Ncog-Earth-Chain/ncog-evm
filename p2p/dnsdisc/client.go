@@ -178,6 +178,8 @@ func parseAndVerifyRoot(txt string, loc *linkEntry) (rootEntry, error) {
 		return e, entryError{typ: "root", err: errInvalidSig}
 	}
 
+	fmt.Println("ValidateMLDsa87Signature", "5")
+
 	return e, nil
 }
 

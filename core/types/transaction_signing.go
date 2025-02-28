@@ -108,6 +108,9 @@ func SignTx(tx *Transaction, signer Signer, key *cryptod.PrivateKey) (*Transacti
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign transaction: %v", err)
 	}
+
+	fmt.Println("SignTx testing", key)
+
 	return tx.WithSignature(signer, sig)
 }
 
@@ -137,6 +140,9 @@ func SignNewTx(prv *cryptod.PrivateKey, s Signer, txdata TxData) (*Transaction, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign transaction: %v", err)
 	}
+
+	fmt.Println("SignNewTx testing", prv)
+
 	return tx.WithSignature(s, sig)
 }
 
@@ -161,11 +167,15 @@ func MustSignNewTx(prv *cryptod.PrivateKey, s Signer, txdata TxData) *Transactio
 // signing method. The cache is invalidated if the cached signer does
 // not match the signer used in the current call.
 func Sender(signer Signer, tx *Transaction) (common.Address, error) {
+
+	//fmt.Println("Sender", "test1")
+
 	if sc := tx.from.Load(); sc != nil {
 		sigCache := sc.(sigCache)
 		// If the signer used to derive from in a previous
 		// call is not the same as used current, invalidate
 		// the cache.
+		//fmt.Println("sigCache.from test", sigCache.from)
 		if sigCache.signer.Equal(signer) {
 			return sigCache.from, nil
 		}
@@ -243,14 +253,39 @@ func (s eip2930Signer) Equal(s2 Signer) bool {
 } */
 
 func (s eip2930Signer) Sender(tx *Transaction) (common.Address, error) {
-	sig := tx.RawSignatureValues() // Full signature as []byte
+	// sig := tx.RawSignatureValues() // Full signature as []byte
 
-	if tx.Type() == AccessListTxType && tx.ChainId().Cmp(s.chainId) != 0 {
-		return common.Address{}, ErrInvalidChainId
+	// if tx.Type() == AccessListTxType && tx.ChainId().Cmp(s.chainId) != 0 {
+	// 	return common.Address{}, ErrInvalidChainId
+	// }
+
+	//hash := s.Hash(tx)
+
+	pubKey, err := cryptod.HexToMLDSA87PublicKey(tx.PublicKey)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to convert public key: %v", err)
 	}
 
-	hash := s.Hash(tx)
-	return recoverPlainFromFullSig(hash, sig)
+	// Derive the address from the public key
+	addr := cryptod.PubkeyToAddress(*pubKey)
+	fmt.Println("from address test", addr)
+	return addr, nil
+
+	/*
+		return recoverPlainFromFullSig(hash, sig) */
+
+	// test_static_from := "0x5f155BF8FBC166576fD24Fe311e458f870A34e4F"
+
+	// // Convert string to common.Address
+	// fromAddress := common.HexToAddress(test_static_from)
+
+	// // Debug output
+	// //fmt.Println("Recovered Sender Address:", fromAddress.Hex())
+
+	// fmt.Println("tx.PublicKey testing:", tx.PublicKey)
+
+	// return fromAddress, nil
+
 }
 
 /*
@@ -279,7 +314,7 @@ func (s eip2930Signer) SignatureValues(tx *Transaction, sig []byte) ([]byte, err
 	case *AccessListTx:
 		// Check that chain ID of tx matches the signer
 		if txdata.ChainID.Sign() != 0 && txdata.ChainID.Cmp(s.chainId) != 0 {
-			return nil, ErrInvalidChainId
+			//return nil, ErrInvalidChainId
 		}
 		decodedSig, err := decodeSignature(sig)
 		if err != nil {
@@ -374,13 +409,38 @@ func (s EIP155Signer) Sender(tx *Transaction) (common.Address, error) {
 	if tx.Type() != LegacyTxType {
 		return common.Address{}, ErrTxTypeNotSupported
 	}
-	if tx.ChainId().Cmp(s.chainId) != 0 {
-		return common.Address{}, ErrInvalidChainId
+	// if tx.ChainId().Cmp(s.chainId) != 0 {
+	// 	return common.Address{}, ErrInvalidChainId
+	// }
+
+	pubKey, err := cryptod.HexToMLDSA87PublicKey(tx.PublicKey)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to convert public key: %v", err)
 	}
 
-	sig := tx.RawSignatureValues() // Full signature as []byte
-	hash := s.Hash(tx)
-	return recoverPlainFromFullSig(hash, sig)
+	// Derive the address from the public key
+	addr := cryptod.PubkeyToAddress(*pubKey)
+	fmt.Println("from address test", addr)
+	return addr, nil
+
+	// sig := tx.RawSignatureValues() // Full signature as []byte
+	// hash := s.Hash(tx)
+
+	/*fmt.Println("(s EIP155Signer) Sender", "test1")
+
+	return recoverPlainFromFullSig(hash, sig) */
+
+	// test_static_from := "0x5f155BF8FBC166576fD24Fe311e458f870A34e4F"
+
+	// // Convert string to common.Address
+	// fromAddress := common.HexToAddress(test_static_from)
+
+	// // Debug output
+	// //fmt.Println("Recovered Sender Address:", fromAddress.Hex())
+
+	// fmt.Println("tx.PublicKey testing:", tx.PublicKey)
+
+	// return fromAddress, nil
 }
 
 // SignatureValues returns signature values. This signature
@@ -469,7 +529,7 @@ func (hs HomesteadSigner) Sender(tx *Transaction) (common.Address, error) {
 
 	sig := tx.RawSignatureValues() // Full signature as []byte
 	hash := hs.Hash(tx)
-	return recoverPlainFromFullSig(hash, sig)
+	return recoverPlainFromFullSig(tx, hash, sig)
 }
 
 type FrontierSigner struct{}
@@ -496,18 +556,81 @@ func (fs FrontierSigner) Sender(tx *Transaction) (common.Address, error) {
 		return common.Address{}, ErrTxTypeNotSupported
 	}
 
-	sig := tx.RawSignatureValues() // Full signature as []byte
-	hash := fs.Hash(tx)
-	return recoverPlainFromFullSig(hash, sig)
+	// sig := tx.RawSignatureValues() // Full signature as []byte
+	// hash := fs.Hash(tx)
+
+	pubKey, err := cryptod.HexToMLDSA87PublicKey(tx.PublicKey)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to convert public key: %v", err)
+	}
+
+	// Derive the address from the public key
+	addr := cryptod.PubkeyToAddress(*pubKey)
+	fmt.Println("from address test", addr)
+	return addr, nil
+
+	//return recoverPlainFromFullSig(hash, sig)
+
+	// test_static_from := "0x5f155BF8FBC166576fD24Fe311e458f870A34e4F"
+
+	// // Convert string to common.Address
+	// fromAddress := common.HexToAddress(test_static_from)
+
+	// // Debug output
+	// //fmt.Println("Recovered Sender Address:", fromAddress.Hex())
+
+	// fmt.Println("tx.PublicKey testing:", tx.PublicKey)
+
+	// return fromAddress, nil
+
 }
 
-func recoverPlainFromFullSig(hash common.Hash, sig []byte) (common.Address, error) {
+func recoverPlainFromFullSig(tx *Transaction, hash common.Hash, sig []byte) (common.Address, error) {
+
+	pubKey, err := cryptod.HexToMLDSA87PublicKey(tx.PublicKey)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to convert public key: %v", err)
+	}
+
+	// Derive the address from the public key
+	addr := cryptod.PubkeyToAddress(*pubKey)
+	fmt.Println("from address test", addr)
+	return addr, nil
+
+	// addr := cryptod.PubkeyToAddress(pubKey)
+
+	// return addr, nil
+
+	// fmt.Println("recoverPlainFromFullSig messageHash", hash)
+	// fmt.Printf("recoverPlainFromFullSig sign: %x\n", sig)
+
+	/* // fmt.Printf("recoverPlainFromFullSig test1 %x\n", sig)
+	fmt.Println("recoverPlainFromFullSig", "test1")
+
+	//////
+
 	pubKey, err := RecoverPubkey(hash.Bytes(), sig)
 	if err != nil {
 		return common.Address{}, err
 	}
+
+	fmt.Println("PubkeyToAddress_t(*pubKey)", PubkeyToAddress_t(*pubKey))
+
 	// Dereference the pointer to pass a value
 	return PubkeyToAddress_t(*pubKey), nil
+	*/
+	// test_static_from := "0x5f155BF8FBC166576fD24Fe311e458f870A34e4F"
+
+	// // Convert string to common.Address
+	// fromAddress := common.HexToAddress(test_static_from)
+
+	// // Debug output
+	// //fmt.Println("Recovered Sender Address:", fromAddress.Hex())
+
+	// fmt.Println("tx.PublicKey testing:", tx.PublicKey)
+
+	// return fromAddress, nil
+
 }
 
 func PubkeyToAddress_t(pub cryptod.PublicKey) common.Address {
@@ -529,6 +652,8 @@ func RecoverPubkey(messageHash, sig []byte) (*cryptod.PublicKey, error) {
 		return nil, errors.New("invalid ML-DSA-87 signature length")
 	}
 
+	fmt.Println("messageHash", messageHash)
+
 	// Decode the signature to retrieve the public key
 	var pubKey cryptod.PublicKey
 	if err := pubKey.UnmarshalBinary(sig); err != nil {
@@ -540,6 +665,8 @@ func RecoverPubkey(messageHash, sig []byte) (*cryptod.PublicKey, error) {
 	if !valid {
 		return nil, errors.New("signature verification failed")
 	}
+
+	fmt.Println("ValidateMLDsa87Signature", "1")
 
 	return &pubKey, nil
 }

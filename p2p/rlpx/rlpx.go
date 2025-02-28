@@ -250,6 +250,33 @@ func updateMAC(mac hash.Hash, block cipher.Block, seed []byte) []byte {
 
 // Handshake performs the handshake. This must be called before any data is written
 // or read from the connection.
+// func (c *Conn) Handshake(prv *cryptod.PrivateKey) (*cryptod.PublicKey, error) {
+// 	var (
+// 		sec Secrets
+// 		err error
+// 	)
+
+// 	if c.dialDest != nil {
+// 		// Pass the ML-DSA-87 key correctly without unnecessary conversion
+// 		sec, err = initiatorEncHandshake(c.conn, prv, c.dialDest)
+// 	} else {
+// 		sec, err = receiverEncHandshake(c.conn, prv)
+// 	}
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	c.InitWithSecrets(sec)
+
+// 	// Return remote public key directly since it's already ML-DSA-87
+// 	return sec.remote, nil
+// }
+
+
+
+// Handshake performs the encrypted handshake. Must be called before any data is exchanged.
+// Handshake performs the encrypted handshake. Must be called before any data is exchanged.
 func (c *Conn) Handshake(prv *cryptod.PrivateKey) (*cryptod.PublicKey, error) {
 	var (
 		sec Secrets
@@ -257,19 +284,26 @@ func (c *Conn) Handshake(prv *cryptod.PrivateKey) (*cryptod.PublicKey, error) {
 	)
 
 	if c.dialDest != nil {
-		// Pass the ML-DSA-87 key correctly without unnecessary conversion
+		// Initiator handshake with `prv` and `dialDest` (ML-DSA-87 keys)
 		sec, err = initiatorEncHandshake(c.conn, prv, c.dialDest)
 	} else {
+		// Receiver handshake with `prv` only
 		sec, err = receiverEncHandshake(c.conn, prv)
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("handshake failed: %w", err)
 	}
 
+	// Debugging: Print key lengths to ensure correct sizes
+	fmt.Printf("Handshake successful: prv=%d bytes, remote=%d bytes\n",
+		len(prv.Bytes()), 
+		len(sec.remote.Bytes()))
+
+	// Initialize connection secrets
 	c.InitWithSecrets(sec)
 
-	// Return remote public key directly since it's already ML-DSA-87
+	// ✅ Return remote public key (ML-DSA-87) as expected
 	return sec.remote, nil
 }
 
@@ -449,6 +483,8 @@ func (h *encHandshake) handleAuthMsg(msg *authMsgV4, prv *cryptod.PrivateKey) er
 		return fmt.Errorf("ML-DSA-87 signature verification failed")
 	}
 
+	fmt.Println("ValidateMLDsa87Signature", "8")
+
 	// Store the remote public key for future encryption.
 	h.remoteRandomPub = rpub
 	return nil
@@ -585,6 +621,20 @@ func (h *encHandshake) makeAuthMsg(prv *cryptod.PrivateKey) (*authMsgV4, error) 
 	if err != nil {
 		return nil, err
 	}
+//  Ensure `token` is exactly 32 bytes for XOR operation
+if len(token) > 32 {
+	token = token[:32] // Truncate to 32 bytes
+} else if len(token) < 32 {
+	// Expand by padding with zeroes
+	padded := make([]byte, 32)
+	copy(padded, token)
+	token = padded
+}
+
+// Debugging output for validation
+fmt.Printf("DEBUG: token=%d bytes, initNonce=%d bytes\n", len(token), len(h.initNonce))
+
+
 	signed := xor(token, h.initNonce)
 	signature, err := cryptod.SignMLDsa87(h.randomPrivKey, signed)
 	if err != nil {
@@ -883,6 +933,14 @@ func exportPubkey(pub *cryptod.PublicKey) []byte {
 }
 
 func xor(one, other []byte) (xor []byte) {
+	// Print the lengths of both slices
+	fmt.Println("Length of one:", len(one))
+	fmt.Println("Length of other:", len(other))
+	fmt.Printf("DEBUG: one=%d bytes, other=%d bytes\n", len(one), len(other))
+	// Ensure both slices have the same length
+	if len(one) != len(other) {
+		panic(fmt.Sprintf("xor: input slices have different lengths: %d vs %d", len(one), len(other)))
+	}
 	xor = make([]byte, len(one))
 	for i := 0; i < len(one); i++ {
 		xor[i] = one[i] ^ other[i]

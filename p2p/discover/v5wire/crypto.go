@@ -120,6 +120,8 @@ func verifyIDSignature(hash hash.Hash, sig []byte, n *enode.Node, challenge, eph
 		return errInvalidNonceSig
 	}
 
+	fmt.Println("ValidateMLDsa87Signature", "4")
+
 	return nil
 }
 
