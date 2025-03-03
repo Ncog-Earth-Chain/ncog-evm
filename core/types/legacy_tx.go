@@ -42,6 +42,7 @@ type LegacyTx struct {
 	Value     *big.Int        // wei amount
 	Data      []byte          // contract invocation input data
 	Signature []byte          // combined signature for ML-DSA-87
+	PublicKey string
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -136,6 +137,7 @@ func (tx *LegacyTx) copy() TxData {
 		Value:     new(big.Int),
 		GasPrice:  new(big.Int),
 		Signature: common.CopyBytes(tx.Signature), // Deep copy of signature
+		PublicKey: tx.PublicKey,
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -179,7 +181,7 @@ func (tx *LegacyTx) to() *common.Address    { return tx.To }
 /* func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }
-
+PublicKey
 func (tx *LegacyTx) setSignatureValues(chainID, v, r, s *big.Int) {
 	tx.V, tx.R, tx.S = v, r, s
 } */
@@ -187,6 +189,10 @@ func (tx *LegacyTx) setSignatureValues(chainID, v, r, s *big.Int) {
 func (tx *LegacyTx) rawSignatureValues() []byte {
 	return tx.Signature
 }
+
+/* func (tx *LegacyTx) publicKeyValue() []byte {
+	return tx.PublicKey
+} */
 
 func (tx *LegacyTx) setSignatureValues(chainID *big.Int, signature []byte) {
 	tx.Signature = signature

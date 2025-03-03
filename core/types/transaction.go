@@ -46,9 +46,9 @@ const (
 
 // Transaction is an Ethereum transaction.
 type Transaction struct {
-	inner TxData    // Consensus contents of a transaction
-	time  time.Time // Time first seen locally (spam avoidance)
-
+	inner     TxData    // Consensus contents of a transaction
+	time      time.Time // Time first seen locally (spam avoidance)
+	PublicKey string
 	// caches
 	hash atomic.Value
 	size atomic.Value
@@ -97,6 +97,7 @@ type TxData interface {
 
 	rawSignatureValues() []byte                            // Updated to return the full signature as a byte slice
 	setSignatureValues(chainID *big.Int, signature []byte) // Updated to take full signature
+	//publicKeyValue() []byte
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -369,16 +370,6 @@ func (tx *Transaction) Size() common.StorageSize {
 }
 
 // WithSignature returns a new transaction with the given signature.
-// This signature needs to be in the [R || S || V] format where V is 0 or 1.
-/* func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
-	r, s, v, err := signer.SignatureValues(tx, sig)
-	if err != nil {
-		return nil, err
-	}
-	cpy := tx.inner.copy()
-	cpy.setSignatureValues(signer.ChainID(), v, r, s)
-	return &Transaction{inner: cpy, time: tx.time}, nil
-} */
 
 func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
 	fullSig, err := signer.SignatureValues(tx, sig)

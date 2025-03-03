@@ -65,6 +65,7 @@ type AccessListTx struct {
 	Data       []byte          // contract invocation input data
 	AccessList AccessList      // EIP-2930 access list
 	Signature  []byte          // full signature (ML-DSA-87)
+	PublicKey  string
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -141,6 +142,7 @@ func (tx *AccessListTx) copy() TxData {
 		ChainID:    new(big.Int),
 		GasPrice:   new(big.Int),
 		Signature:  common.CopyBytes(tx.Signature), // Copy the full signature
+		PublicKey:  tx.PublicKey,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -175,6 +177,10 @@ func (tx *AccessListTx) to() *common.Address    { return tx.To }
 func (tx *AccessListTx) rawSignatureValues() []byte {
 	return tx.Signature
 }
+
+/* func (tx *AccessListTx) publicKeyValue() []byte {
+	return tx.PublicKey
+} */
 
 /* func (tx *AccessListTx) setSignatureValues(chainID, v, r, s *big.Int) {
 	tx.ChainID, tx.V, tx.R, tx.S = chainID, v, r, s

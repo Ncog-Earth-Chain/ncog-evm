@@ -243,34 +243,25 @@ func (s eip2930Signer) Equal(s2 Signer) bool {
 } */
 
 func (s eip2930Signer) Sender(tx *Transaction) (common.Address, error) {
-	sig := tx.RawSignatureValues() // Full signature as []byte
+	// sig := tx.RawSignatureValues() // Full signature as []byte
 
-	if tx.Type() == AccessListTxType && tx.ChainId().Cmp(s.chainId) != 0 {
-		return common.Address{}, ErrInvalidChainId
+	// if tx.Type() == AccessListTxType && tx.ChainId().Cmp(s.chainId) != 0 {
+	// 	return common.Address{}, ErrInvalidChainId
+	// }
+
+	//hash := s.Hash(tx)
+
+	pubKey, err := cryptod.HexToMLDSA87PublicKey(tx.PublicKey)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to convert public key: %v", err)
 	}
 
-	hash := s.Hash(tx)
-	return recoverPlainFromFullSig(hash, sig)
+	// Derive the address from the public key
+	addr := cryptod.PubkeyToAddress(*pubKey)
+	fmt.Println("from address test", addr)
+	return addr, nil
+
 }
-
-/*
-func (s eip2930Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
-	switch txdata := tx.inner.(type) {
-	case *LegacyTx:
-		return s.EIP155Signer.SignatureValues(tx, sig)
-	case *AccessListTx:
-		// Check that chain ID of tx matches the signer. We also accept ID zero here,
-		// because it indicates that the chain ID was not specified in the tx.
-		if txdata.ChainID.Sign() != 0 && txdata.ChainID.Cmp(s.chainId) != 0 {
-			return nil, nil, nil, ErrInvalidChainId
-		}
-		R, S, _ = decodeSignature(sig)
-		V = big.NewInt(int64(sig[64]))
-	default:
-		return nil, nil, nil, ErrTxTypeNotSupported
-	}
-	return R, S, V, nil
-} */
 
 func (s eip2930Signer) SignatureValues(tx *Transaction, sig []byte) ([]byte, error) {
 	switch txdata := tx.inner.(type) {
@@ -279,7 +270,7 @@ func (s eip2930Signer) SignatureValues(tx *Transaction, sig []byte) ([]byte, err
 	case *AccessListTx:
 		// Check that chain ID of tx matches the signer
 		if txdata.ChainID.Sign() != 0 && txdata.ChainID.Cmp(s.chainId) != 0 {
-			return nil, ErrInvalidChainId
+			//return nil, ErrInvalidChainId
 		}
 		decodedSig, err := decodeSignature(sig)
 		if err != nil {
@@ -354,48 +345,25 @@ func (s EIP155Signer) Equal(s2 Signer) bool {
 
 var big8 = big.NewInt(8)
 
-/* func (s EIP155Signer) Sender(tx *Transaction) (common.Address, error) {
-	if tx.Type() != LegacyTxType {
-		return common.Address{}, ErrTxTypeNotSupported
-	}
-	if !tx.Protected() {
-		return HomesteadSigner{}.Sender(tx)
-	}
-	if tx.ChainId().Cmp(s.chainId) != 0 {
-		return common.Address{}, ErrInvalidChainId
-	}
-	V, R, S := tx.RawSignatureValues()
-	V = new(big.Int).Sub(V, s.chainIdMul)
-	V.Sub(V, big8)
-	return recoverPlain(s.Hash(tx), R, S, V, true)
-} */
-
 func (s EIP155Signer) Sender(tx *Transaction) (common.Address, error) {
 	if tx.Type() != LegacyTxType {
 		return common.Address{}, ErrTxTypeNotSupported
 	}
-	if tx.ChainId().Cmp(s.chainId) != 0 {
-		return common.Address{}, ErrInvalidChainId
+	// if tx.ChainId().Cmp(s.chainId) != 0 {
+	// 	return common.Address{}, ErrInvalidChainId
+	// }
+
+	pubKey, err := cryptod.HexToMLDSA87PublicKey(tx.PublicKey)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to convert public key: %v", err)
 	}
 
-	sig := tx.RawSignatureValues() // Full signature as []byte
-	hash := s.Hash(tx)
-	return recoverPlainFromFullSig(hash, sig)
+	// Derive the address from the public key
+	addr := cryptod.PubkeyToAddress(*pubKey)
+	fmt.Println("from address test", addr)
+	return addr, nil
+
 }
-
-// SignatureValues returns signature values. This signature
-// needs to be in the [R || S || V] format where V is 0 or 1.
-/* func (s EIP155Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
-	if tx.Type() != LegacyTxType {
-		return nil, nil, nil, ErrTxTypeNotSupported
-	}
-	R, S, V = decodeSignature(sig)
-	if s.chainId.Sign() != 0 {
-		V = big.NewInt(int64(sig[64] + 35))
-		V.Add(V, s.chainIdMul)
-	}
-	return R, S, V, nil
-} */
 
 func (s EIP155Signer) SignatureValues(tx *Transaction, sig []byte) ([]byte, error) {
 	if tx.Type() != LegacyTxType {
@@ -435,32 +403,9 @@ func (s HomesteadSigner) Equal(s2 Signer) bool {
 	return ok
 }
 
-// SignatureValues returns signature values. This signature
-// needs to be in the [R || S || V] format where V is 0 or 1.
-/* func (hs HomesteadSigner) SignatureValues(tx *Transaction, sig []byte) (r, s, v *big.Int, err error) {
-	return hs.FrontierSigner.SignatureValues(tx, sig)
-} */
-
-/* func (hs HomesteadSigner) SignatureValues(tx *Transaction, sig []byte) ([]byte, error) {
-	decodedSig, err := decodeSignature(sig)
-	if err != nil {
-		return nil, err
-	}
-	return decodedSig, nil
-} */
-
 func (hs HomesteadSigner) SignatureValues(tx *Transaction, sig []byte) ([]byte, error) {
 	return sig, nil
 }
-
-/*
-func (hs HomesteadSigner) Sender(tx *Transaction) (common.Address, error) {
-	if tx.Type() != LegacyTxType {
-		return common.Address{}, ErrTxTypeNotSupported
-	}
-	v, r, s := tx.RawSignatureValues()
-	return recoverPlain(hs.Hash(tx), r, s, v, true)
-} */
 
 func (hs HomesteadSigner) Sender(tx *Transaction) (common.Address, error) {
 	if tx.Type() != LegacyTxType {
@@ -469,7 +414,7 @@ func (hs HomesteadSigner) Sender(tx *Transaction) (common.Address, error) {
 
 	sig := tx.RawSignatureValues() // Full signature as []byte
 	hash := hs.Hash(tx)
-	return recoverPlainFromFullSig(hash, sig)
+	return recoverPlainFromFullSig(tx, hash, sig)
 }
 
 type FrontierSigner struct{}
@@ -483,31 +428,38 @@ func (s FrontierSigner) Equal(s2 Signer) bool {
 	return ok
 }
 
-/* func (fs FrontierSigner) Sender(tx *Transaction) (common.Address, error) {
-	if tx.Type() != LegacyTxType {
-		return common.Address{}, ErrTxTypeNotSupported
-	}
-	v, r, s := tx.RawSignatureValues()
-	return recoverPlain(fs.Hash(tx), r, s, v, false)
-} */
-
 func (fs FrontierSigner) Sender(tx *Transaction) (common.Address, error) {
 	if tx.Type() != LegacyTxType {
 		return common.Address{}, ErrTxTypeNotSupported
 	}
 
-	sig := tx.RawSignatureValues() // Full signature as []byte
-	hash := fs.Hash(tx)
-	return recoverPlainFromFullSig(hash, sig)
+	// sig := tx.RawSignatureValues() // Full signature as []byte
+	// hash := fs.Hash(tx)
+
+	pubKey, err := cryptod.HexToMLDSA87PublicKey(tx.PublicKey)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to convert public key: %v", err)
+	}
+
+	// Derive the address from the public key
+	addr := cryptod.PubkeyToAddress(*pubKey)
+	fmt.Println("from address test", addr)
+	return addr, nil
+
 }
 
-func recoverPlainFromFullSig(hash common.Hash, sig []byte) (common.Address, error) {
-	pubKey, err := RecoverPubkey(hash.Bytes(), sig)
+func recoverPlainFromFullSig(tx *Transaction, hash common.Hash, sig []byte) (common.Address, error) {
+
+	pubKey, err := cryptod.HexToMLDSA87PublicKey(tx.PublicKey)
 	if err != nil {
-		return common.Address{}, err
+		return common.Address{}, fmt.Errorf("failed to convert public key: %v", err)
 	}
-	// Dereference the pointer to pass a value
-	return PubkeyToAddress_t(*pubKey), nil
+
+	// Derive the address from the public key
+	addr := cryptod.PubkeyToAddress(*pubKey)
+	fmt.Println("from address test", addr)
+	return addr, nil
+
 }
 
 func PubkeyToAddress_t(pub cryptod.PublicKey) common.Address {
@@ -543,35 +495,6 @@ func RecoverPubkey(messageHash, sig []byte) (*cryptod.PublicKey, error) {
 
 	return &pubKey, nil
 }
-
-// SignatureValues returns signature values. This signature
-// needs to be in the [R || S || V] format where V is 0 or 1.
-/* func (fs FrontierSigner) SignatureValues(tx *Transaction, sig []byte) (r, s, v *big.Int, err error) {
-	if tx.Type() != LegacyTxType {
-		return nil, nil, nil, ErrTxTypeNotSupported
-	}
-	r, s, v = decodeSignature(sig)
-	return r, s, v, nil
-} */
-
-/* func (fs FrontierSigner) SignatureValues(tx *Transaction, sig []byte) ([]byte, error) {
-	if tx.Type() != LegacyTxType {
-		return nil, ErrTxTypeNotSupported
-	}
-	decodedSig, err := decodeSignature(sig)
-	if err != nil {
-		return nil, err
-	}
-	return decodedSig, nil
-} */
-/*
-func (fs FrontierSigner) SignatureValues(tx *Transaction, sig []byte) ([]byte, error) {
-	decodedSig, err := decodeSignature(sig)
-	if err != nil {
-		return nil, err
-	}
-	return decodedSig, nil
-} */
 
 func (fs FrontierSigner) SignatureValues(tx *Transaction, sig []byte) ([]byte, error) {
 	return sig, nil

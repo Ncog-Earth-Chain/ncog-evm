@@ -143,6 +143,22 @@ func HexToMLDsa87(hexkey string) (*mldsa87.PrivateKey, error) {
 	return ToMLDsa87(b)
 }
 
+func HexToMLDSA87PublicKey(hexKey string) (*mldsa87.PublicKey, error) {
+	// Step 1: Decode the hex string into bytes
+	pubKeyBytes, err := hex.DecodeString(hexKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode hex string: %v", err)
+	}
+
+	// Step 2: Unmarshal the bytes into an mldsa87.PublicKey
+	var pubKey mldsa87.PublicKey
+	if err := pubKey.UnmarshalBinary(pubKeyBytes); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal public key: %v", err)
+	}
+
+	return &pubKey, nil
+}
+
 func MLDsa87ToHex(key *mldsa87.PrivateKey) (string, error) {
 	// Marshal the MLDsa87 private key to its binary representation
 	keyBytes, err := key.MarshalBinary()
@@ -244,6 +260,16 @@ func PubkeyToAddress(pub mldsa87.PublicKey) common.Address {
 	pubBytes, _ := pub.MarshalBinary()
 	return common.BytesToAddress(Keccak512(pubBytes)[12:])
 }
+
+// PubkeyToAddress converts an mldsa87.PublicKey to an Ethereum address
+/* func PubkeyToAddress(pub *mldsa87.PublicKey) (common.Address, error) {
+	pubBytes, err := pub.MarshalBinary()
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to marshal public key: %v", err)
+	}
+	hash := Keccak512(pubBytes)
+	return common.BytesToAddress(hash[12:]), nil
+} */
 
 /* func zeroBytes(bytes []byte) {
 	for i := range bytes {
@@ -362,7 +388,7 @@ func DeriveSharedSecret(priv *mldsa87.PrivateKey, pub *mldsa87.PublicKey) ([]byt
 	return signature[:32], nil // Use only the first 32 bytes as the shared key
 }
 
-// ✅ **Decapsulate ciphertext using ML-DSA-87 Private Key**
+// **Decapsulate ciphertext using ML-DSA-87 Private Key**
 func DecapsulateMLDsa87(priv *mldsa87.PrivateKey, ciphertext []byte) ([]byte, error) {
 	// 🔹 **Step 1: Use ML-DSA-87 Private Key for Decapsulation**
 	sharedSecret, err := priv.Sign(rand.Reader, ciphertext, crypto.Hash(0))

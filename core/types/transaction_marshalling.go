@@ -60,7 +60,7 @@ type txJSON struct {
 	Data      *hexutil.Bytes  `json:"input"`
 	To        *common.Address `json:"to"`
 	Signature *hexutil.Bytes  `json:"signature,omitempty"` // Full signature in bytes
-
+	//PublicKey *hexutil.Bytes  `json:"publickey,omitempty"`
 	// Access list transaction fields:
 	ChainID    *hexutil.Big `json:"chainId,omitempty"`
 	AccessList *AccessList  `json:"accessList,omitempty"`
@@ -119,6 +119,7 @@ func (t *Transaction) MarshalJSON() ([]byte, error) {
 		enc.Data = (*hexutil.Bytes)(&tx.Data)
 		enc.To = t.To()
 		enc.Signature = (*hexutil.Bytes)(&tx.Signature) // Use the full signature
+		//enc.PublicKey = (*hexutil.Bytes)(&tx.PublicKey)
 	case *AccessListTx:
 		enc.ChainID = (*hexutil.Big)(tx.ChainID)
 		enc.AccessList = &tx.AccessList
@@ -129,6 +130,7 @@ func (t *Transaction) MarshalJSON() ([]byte, error) {
 		enc.Data = (*hexutil.Bytes)(&tx.Data)
 		enc.To = t.To()
 		enc.Signature = (*hexutil.Bytes)(&tx.Signature)
+		//enc.PublicKey = (*hexutil.Bytes)(&tx.PublicKey)
 	}
 	return json.Marshal(&enc)
 }
