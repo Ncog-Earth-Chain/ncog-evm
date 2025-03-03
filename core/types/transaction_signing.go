@@ -258,7 +258,7 @@ func (s eip2930Signer) Sender(tx *Transaction) (common.Address, error) {
 
 	// Derive the address from the public key
 	addr := cryptod.PubkeyToAddress(*pubKey)
-	fmt.Println("from address test", addr)
+
 	return addr, nil
 
 }
@@ -360,7 +360,7 @@ func (s EIP155Signer) Sender(tx *Transaction) (common.Address, error) {
 
 	// Derive the address from the public key
 	addr := cryptod.PubkeyToAddress(*pubKey)
-	fmt.Println("from address test", addr)
+
 	return addr, nil
 
 }
@@ -443,7 +443,7 @@ func (fs FrontierSigner) Sender(tx *Transaction) (common.Address, error) {
 
 	// Derive the address from the public key
 	addr := cryptod.PubkeyToAddress(*pubKey)
-	fmt.Println("from address test", addr)
+
 	return addr, nil
 
 }
@@ -457,7 +457,7 @@ func recoverPlainFromFullSig(tx *Transaction, hash common.Hash, sig []byte) (com
 
 	// Derive the address from the public key
 	addr := cryptod.PubkeyToAddress(*pubKey)
-	fmt.Println("from address test", addr)
+
 	return addr, nil
 
 }
